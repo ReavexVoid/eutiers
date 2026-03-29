@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="favicon.jpg>
+<title>EUTiers - Minecraft PvP Ranking Platformr</title>
+
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #111;
+        color: white;
+        font-family: Arial;
+    }
+
+    iframe {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        border: none;
+    }
+
+    #error {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        background: #111;
+        z-index: 10;
+    }
+</style>
+</head>
+<body>
+
+<iframe id="frame" src="https://pasta-packets-frederick-noted.trycloudflare.com/"></iframe>
+
+<div id="error">
+    <h1>❌ Failed to load page</h1>
+    <p>It's possible that your browser blocks the iframe. Try using the url: https://pasta-packets-frederick-noted.trycloudflare.com</p>
+</div>
+
+<script>
+const iframe = document.getElementById("frame");
+const errorDiv = document.getElementById("error");
+
+let loaded = false;
+
+iframe.onload = () => {
+    loaded = true;
+};
+
+setTimeout(() => {
+    if (!loaded) {
+        iframe.style.display = "none";
+        errorDiv.style.display = "flex";
+    }
+}, 5000);
+</script>
+
+</body>
+</html>
