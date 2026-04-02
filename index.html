@@ -1,70 +1,136 @@
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" href="favicon.jpg>
-<title>EUTiers - Minecraft PvP Ranking Platform</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="favicon.jpg">
+<title>Tier Test System</title>
 <style>
-    html, body {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        overflow: hidden;
-        background: #111;
-        color: white;
-        font-family: Arial;
-    }
-
-    iframe {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        border: none;
-    }
-
-    #error {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        display: none;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        background: #111;
-        z-index: 10;
-    }
+body { margin:0; font-family:'Segoe UI',sans-serif; background:linear-gradient(135deg,#0f172a,#1e293b); color:white; }
+.header { text-align:center; padding:30px; font-size:34px; font-weight:bold; }
+.container { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; padding:20px; }
+.card { background:rgba(30,41,59,0.85); padding:20px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+input,select { width:100%; padding:10px; margin:6px 0; border-radius:8px; border:none; }
+.button { width:100%; padding:12px; margin-top:10px; border-radius:10px; border:none; background:#38bdf8; font-weight:bold; cursor:pointer; }
+.result { margin-top:10px; font-size:18px; color:#38bdf8; }
 </style>
 </head>
 <body>
 
-<iframe id="frame" src="https://pasta-packets-frederick-noted.trycloudflare.com/"></iframe>
+<div class="header">🏆 Tier Test System</div>
 
-<div id="error">
-    <h1>❌ Failed to load page</h1>
-    <p>It's possible that your browser blocks the iframe. Try using the url: https://pasta-packets-frederick-noted.trycloudflare.com</p>
+<div class="container">
+
+<div class="card">
+<h2>👤 Player</h2>
+<input id="player" placeholder="Player Name">
+</div>
+
+<div class="card">
+<h2>🎮 Mode & FT</h2>
+<select id="mode">
+<option value="vanilla">Vanilla</option>
+<option value="diasmp">DiaSMP</option>
+<option value="nethpot">NethPot</option>
+<option value="mace">Mace</option>
+<option value="smp">SMP</option>
+<option value="cart">Cart</option>
+<option value="sword">Sword</option>
+<option value="uhc">UHC</option>
+<option value="pot">Pot</option>
+<option value="axe">Axe</option>
+</select>
+<select id="tierLevel">
+<option value="high">LT3 felett</option>
+<option value="low">LT3 alatt</option>
+</select>
+<button class="button" onclick="getFT()">Get FT</button>
+<div id="ft" class="result"></div>
+</div>
+
+<div class="card">
+<h2>📊 Score + Skill</h2>
+<input id="score" placeholder="Score (pl: 3-1 / 6-2 / 10-5)">
+<input id="aim" type="number" placeholder="Aim (1-5)">
+<input id="movement" type="number" placeholder="Movement (1-5)">
+<input id="gamesense" type="number" placeholder="Gamesense (1-5)">
+<input id="combo" type="number" placeholder="Combo (1-5)">
+<button class="button" onclick="calculate()">Calculate</button>
+<div id="tierResult" class="result"></div>
+</div>
+
+<div class="card">
+<h2>📦 Export JSON</h2>
+<button class="button" onclick="exportJSON()">Export</button>
+<pre id="jsonOutput"></pre>
+</div>
+
 </div>
 
 <script>
-const iframe = document.getElementById("frame");
-const errorDiv = document.getElementById("error");
+let lastData = {};
 
-let loaded = false;
+function getFT(){
+ let mode=document.getElementById("mode").value;
+ let level=document.getElementById("tierLevel").value;
+ let ft="";
+ if(mode==="axe") ft=(level==="low")?"FT10":"FT20";
+ else if(["sword","uhc","pot"].includes(mode)) ft=(level==="low")?"FT6":"FT10";
+ else ft=(level==="low")?"FT3":"FT4";
+ document.getElementById("ft").innerText="Rounds: "+ft;
+}
 
-iframe.onload = () => {
-    loaded = true;
-};
+function getMatchPoints(mode,score){
+ // Easy modes
+ if(["vanilla","diasmp","nethpot","mace","smp","cart"].includes(mode)){
+  if(score.includes("3-0")||score.includes("3-1")) return 5;
+  if(score.includes("3-2")) return 3;
+ }
+ // Mid modes
+ if(["sword","uhc","pot"].includes(mode)){
+  if(score==="6-0") return 10;
+  if(["6-1","6-2"].includes(score)) return 8;
+  if(["6-3","6-4"].includes(score)) return 6;
+  if(score==="6-5") return 4;
+ }
+ // Axe
+ if(mode==="axe"){
+  let map={"10-0":15,"10-1":14,"10-2":13,"10-3":12,"10-4":11,"10-5":10,"10-6":10,"10-7":8,"10-8":8,"10-9":6};
+  return map[score]||0;
+ }
+ return 0;
+}
 
-setTimeout(() => {
-    if (!loaded) {
-        iframe.style.display = "none";
-        errorDiv.style.display = "flex";
-    }
-}, 5000);
+function calculate(){
+ let player=document.getElementById("player").value;
+ let mode=document.getElementById("mode").value;
+ let score=document.getElementById("score").value;
+ let aim=+document.getElementById("aim").value;
+ let movement=+document.getElementById("movement").value;
+ let gamesense=+document.getElementById("gamesense").value;
+ let combo=+document.getElementById("combo").value;
+
+ let perf=aim+movement+gamesense+combo;
+ let match=getMatchPoints(mode,score);
+ let total=perf+match;
+
+ let tier="";
+ if(total<=5) tier="LT5";
+ else if(total<=10) tier="HT5";
+ else if(total<=15) tier="LT4";
+ else if(total<=20) tier="HT4";
+ else if(total<=25) tier="LT3";
+ else if(total<=30) tier="HT3";
+ else if(total<=35) tier="LT2";
+ else tier="HT2+";
+
+ lastData={player,mode,score,performance:{aim,movement,gamesense,combo},matchPoints:match,total,tier};
+ document.getElementById("tierResult").innerText=`Tier: ${tier} (${total} pts)`;
+}
+
+function exportJSON(){
+ document.getElementById("jsonOutput").innerText=JSON.stringify(lastData,null,2);
+}
 </script>
 
 </body>
