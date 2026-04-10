@@ -69,19 +69,19 @@ input,select {
 
 <body>
 
-<div class="header">🏆 Tier Test System</div>
+<div class="header">Tier Test System</div>
 
 <div class="container">
 
 <!-- PLAYER -->
 <div class="card">
-<h2>👤 Player</h2>
+<h2>Player</h2>
 <input id="player" placeholder="Player Name">
 </div>
 
 <!-- MODE -->
 <div class="card">
-<h2>🎮 Mode & FT</h2>
+<h2>Mode & FT</h2>
 
 <select id="mode">
 <option value="vanilla">Vanilla</option>
@@ -97,8 +97,8 @@ input,select {
 </select>
 
 <select id="tierLevel">
-<option value="high">LT3 felett</option>
-<option value="low">LT3 alatt</option>
+<option value="high">Over LT3</option>
+<option value="low">Under LT3</option>
 </select>
 
 <button class="button" onclick="getFT()">Get FT</button>
@@ -107,7 +107,7 @@ input,select {
 
 <!-- SCORE -->
 <div class="card">
-<h2>📊 Tester vs Player Score</h2>
+<h2>Tester vs Player Score</h2>
 
 <input id="testerScore" type="number" placeholder="Tester Score">
 <input id="playerScore" type="number" placeholder="Player Score">
@@ -124,7 +124,7 @@ input,select {
 
 <!-- EXPORT -->
 <div class="card">
-<h2>📦 Export JSON</h2>
+<h2>Export JSON</h2>
 <button class="button" onclick="exportJSON()">Export</button>
 <pre id="jsonOutput"></pre>
 </div>
