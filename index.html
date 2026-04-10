@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="favicon.jpg">
 <title>Tier Test System</title>
 
 <style>
@@ -33,11 +32,6 @@ body {
  padding:20px;
  border-radius:16px;
  box-shadow:0 10px 30px rgba(0,0,0,0.5);
- transition:0.3s;
-}
-
-.card:hover {
- transform:scale(1.03);
 }
 
 input,select {
@@ -61,15 +55,15 @@ input,select {
 
 .result {
  margin-top:10px;
- font-size:18px;
- color:#38bdf8;
+ font-size:16px;
+ white-space:pre-line;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">Tier Test System</div>
+<div class="header">Tier Test System PRO</div>
 
 <div class="container">
 
@@ -79,7 +73,7 @@ input,select {
 <input id="player" placeholder="Player Name">
 </div>
 
-<!-- MODE -->
+<!-- MODE + FT -->
 <div class="card">
 <h2>Mode & FT</h2>
 
@@ -107,7 +101,7 @@ input,select {
 
 <!-- SCORE -->
 <div class="card">
-<h2>Tester vs Player Score</h2>
+<h2>Score + Skills</h2>
 
 <input id="testerScore" type="number" placeholder="Tester Score">
 <input id="playerScore" type="number" placeholder="Player Score">
@@ -118,14 +112,14 @@ input,select {
 <input id="combo" type="number" placeholder="Combo (1-5)">
 
 <button class="button" onclick="calculate()">Calculate</button>
-
 <div id="tierResult" class="result"></div>
 </div>
 
 <!-- EXPORT -->
 <div class="card">
-<h2>Export JSON</h2>
-<button class="button" onclick="exportJSON()">Export</button>
+<h2>Export</h2>
+<button class="button" onclick="exportJSON()">Export JSON</button>
+<button class="button" onclick="copyJSON()">Copy JSON</button>
 <pre id="jsonOutput"></pre>
 </div>
 
@@ -135,103 +129,224 @@ input,select {
 
 let lastData = {};
 
-// FT SYSTEM
-function getFT(){
- let mode=document.getElementById("mode").value;
- let level=document.getElementById("tierLevel").value;
+function clamp(v){ return Math.max(1,Math.min(5,v)); }
 
- let ftMap={
+// FT SYSTEM (RESTORED)
+function getFT(){
+ const mode=document.getElementById("mode").value;
+ const level=document.getElementById("tierLevel").value;
+
+ const map={
   axe:["FT10","FT20"],
   sword:["FT6","FT10"],
   uhc:["FT6","FT10"],
   pot:["FT6","FT10"],
-  default:["FT3","FT5"]
+  nethpot:["FT6","FT12"],
+  mace:["FT6","FT12"],
+  smp:["FT4","FT8"],
+  diasmp:["FT5","FT10"],
+  vanilla:["FT3","FT5"],
+  cart:["FT3","FT6"]
  };
 
- let ft = ftMap[mode] ? ftMap[mode][level==="low"?0:1] : ftMap.default[level==="low"?0:1];
-
- document.getElementById("ft").innerText="Rounds: "+ft;
+ document.getElementById("ft").innerText =
+ "Rounds: " + map[mode][level==="low"?0:1];
 }
 
-// MATCH POINTS
-function getMatchPoints(mode,playerScore,testerScore){
- let diff = playerScore - testerScore;
+// MATCH SYSTEM (RESTORED)
+function getMatchPoints(mode,p,t){
+ let diff=p-t;
 
- if(["vanilla","diasmp","nethpot","mace","smp","cart"].includes(mode)){
-  if(diff >= 2) return 5;
-  if(diff === 1) return 3;
+ if(["vanilla","diasmp","smp","cart"].includes(mode)){
+  if(diff>=3) return 5;
+  if(diff>=2) return 3;
  }
 
- if(["sword","uhc","pot"].includes(mode)){
-  if(diff >= 5) return 10;
-  if(diff >= 3) return 8;
-  if(diff >= 2) return 6;
-  if(diff === 1) return 4;
+ if(["sword","uhc","pot","nethpot","mace"].includes(mode)){
+  if(diff>=5) return 10;
+  if(diff>=3) return 8;
+  if(diff>=2) return 6;
  }
 
  if(mode==="axe"){
-  if(diff >= 7) return 15;
-  if(diff >= 5) return 12;
-  if(diff >= 3) return 10;
-  if(diff >= 1) return 8;
+  if(diff>=7) return 15;
+  if(diff>=5) return 12;
+  if(diff>=3) return 10;
  }
 
  return 0;
 }
 
-// MAIN CALC
+function getTier(total, skillAvg, minSkill, mode, level){
+
+ // LT3 modifier
+ let modifier = (level === "high") ? 1.05 : 0.95;
+
+ let adjTotal = total * modifier;
+
+ // MODE BASED HT1 REQUIREMENTS
+ const rules = {
+  axe:     {avg:4.85, min:5,  total:52},
+  sword:   {avg:4.75, min:5,  total:50},
+  uhc:     {avg:4.7,  min:5,  total:50},
+  pot:     {avg:4.7,  min:5,  total:49},
+  nethpot: {avg:4.8,  min:5,  total:51},
+  mace:    {avg:4.8,  min:5,  total:51},
+  smp:     {avg:4.6,  min:4,  total:47},
+  diasmp:  {avg:4.6,  min:4,  total:47},
+  vanilla:  {avg:4.5,  min:4,  total:45},
+  cart:    {avg:4.4,  min:4,  total:44}
+ };
+
+ let r = rules[mode];
+
+ let elite = (skillAvg >= r.avg && minSkill >= r.min && adjTotal >= r.total);
+
+ // NORMAL TIERS
+ if(adjTotal < 18) return "Unranked";
+
+ if(adjTotal < 22) return "Tier 5 LT";
+ if(adjTotal < 25) return "Tier 5 HT";
+
+ if(adjTotal < 28) return "Tier 4 LT";
+ if(adjTotal < 31) return "Tier 4 HT";
+
+ if(adjTotal < 34) return "Tier 3 LT";
+ if(adjTotal < 37) return "Tier 3 HT";
+
+ if(adjTotal < 40) return "Tier 2 LT";
+ if(adjTotal < 43) return "Tier 2 HT";
+
+ if(adjTotal < 46) return "Tier 1 LT";
+
+ // 🔥 FINAL GATE
+ if(elite) return "Tier 1 HT";
+
+ return "Tier 1 LT";
+}
+
+// MAIN
 function calculate(){
 
- let player=document.getElementById("player").value;
- let mode=document.getElementById("mode").value;
+ let player = document.getElementById("player").value;
+ let mode = document.getElementById("mode").value;
+ let level = document.getElementById("tierLevel").value;
 
- let testerScore=+document.getElementById("testerScore").value;
- let playerScore=+document.getElementById("playerScore").value;
+ let tester = +document.getElementById("testerScore").value;
+ let playerScore = +document.getElementById("playerScore").value;
 
- let aim=+document.getElementById("aim").value;
- let movement=+document.getElementById("movement").value;
- let gamesense=+document.getElementById("gamesense").value;
- let combo=+document.getElementById("combo").value;
+ let aim = clamp(+document.getElementById("aim").value);
+ let movement = clamp(+document.getElementById("movement").value);
+ let gamesense = clamp(+document.getElementById("gamesense").value);
+ let combo = clamp(+document.getElementById("combo").value);
 
- if(!player || isNaN(playerScore) || isNaN(testerScore)){
+ if(!player || isNaN(tester) || isNaN(playerScore)){
   alert("Fill everything!");
   return;
  }
 
- let scoreString = `${playerScore}-${testerScore}`;
+ // 🧠 skill
+ let skillAvg = (aim + movement + gamesense + combo) / 4;
+ let minSkill = Math.min(aim, movement, gamesense, combo);
 
- let perf = (aim+movement+gamesense+combo)/4*5;
- let match = getMatchPoints(mode,playerScore,testerScore);
+ // ⚔️ performance (nerfed but fair)
+ let perf = (aim + movement + gamesense + combo) * 3;
+
+ // 📊 match system
+ let match = getMatchPoints(mode, playerScore, tester);
+
  let total = perf + match;
 
- let tier="";
+ // ⚖️ LT3 modifier
+ let modifier = (level === "high") ? 1.05 : 0.95;
+ let adjTotal = total * modifier;
 
- if(total<10) tier="Tier 5";
- else if(total<15) tier="Tier 4";
- else if(total<20) tier="Tier 3";
- else if(total<25) tier="Tier 2";
- else if(total<30) tier="Tier 1";
- else tier="Tier 1+";
-
- lastData={
-  player,
-  mode,
-  score: scoreString,
-  raw:{playerScore,testerScore},
-  performance:{aim,movement,gamesense,combo},
-  matchPoints:match,
-  total,
-  tier
+ // 💀 MODE HT1 RULES
+ const rules = {
+  axe:     {avg:4.85, min:5, total:52},
+  sword:   {avg:4.75, min:5, total:50},
+  uhc:     {avg:4.7,  min:5, total:50},
+  pot:     {avg:4.7,  min:5, total:49},
+  nethpot: {avg:4.8,  min:5, total:51},
+  mace:    {avg:4.8,  min:5, total:51},
+  smp:     {avg:4.6,  min:4, total:47},
+  diasmp:  {avg:4.6,  min:4, total:47},
+  vanilla:  {avg:4.5,  min:4, total:45},
+  cart:    {avg:4.4,  min:4, total:44}
  };
 
- document.getElementById("tierResult").innerText =
- `Tier: ${tier} (${total.toFixed(1)} pts) | Score: ${scoreString}`;
+ let r = rules[mode];
+
+ // 🔥 HT1 ELITE CHECK
+ let isHT1 =
+  skillAvg >= r.avg &&
+  minSkill >= r.min &&
+  adjTotal >= r.total;
+
+ // ❌ anti abuse penalties
+ if(minSkill <= 2 && adjTotal > 25) adjTotal -= 5;
+ if(playerScore - tester >= 5 && perf < 15) adjTotal -= 5;
+
+ // 🏆 TIER SYSTEM
+ let tier = "Tier 5 LT";
+
+ if(adjTotal >= 18) tier = "Tier 5 LT";
+ if(adjTotal >= 22) tier = "Tier 5 HT";
+ if(adjTotal >= 25) tier = "Tier 4 LT";
+ if(adjTotal >= 28) tier = "Tier 4 HT";
+ if(adjTotal >= 31) tier = "Tier 3 LT";
+ if(adjTotal >= 34) tier = "Tier 3 HT";
+ if(adjTotal >= 37) tier = "Tier 2 LT";
+ if(adjTotal >= 40) tier = "Tier 2 HT";
+ if(adjTotal >= 43) tier = "Tier 1 LT";
+
+ // 💀 FINAL GATE
+ if(adjTotal >= 46 && isHT1){
+  tier = "Tier 1 HT";
+ }
+
+ // 🎨 COLOR
+ let el = document.getElementById("tierResult");
+
+ el.style.color =
+ tier.includes("HT") ? "#22c55e" :
+ tier.includes("LT1") ? "#f97316" :
+ "#facc15";
+
+ // 📤 OUTPUT
+ el.innerText =
+`Tier: ${tier}
+
+Total: ${adjTotal.toFixed(1)}
+Skill Avg: ${skillAvg.toFixed(2)}
+Min Skill: ${minSkill}
+Score: ${playerScore}-${tester}
+
+Performance: ${perf}
+Match Points: ${match}`;
+
+ // 💾 SAVE
+ lastData = {
+  player,
+  mode,
+  level,
+  tier,
+  total: adjTotal.toFixed(1),
+  skillAvg
+ };
+
+ localStorage.setItem("lastTest", JSON.stringify(lastData));
 }
 
-// EXPORT JSON
+// EXPORT
 function exportJSON(){
  document.getElementById("jsonOutput").innerText =
  JSON.stringify(lastData,null,2);
+}
+
+function copyJSON(){
+ navigator.clipboard.writeText(JSON.stringify(lastData,null,2));
+ alert("Copied!");
 }
 
 </script>
